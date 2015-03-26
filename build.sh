@@ -34,7 +34,7 @@ function compile {
             if [[ $file == *.c ]]; then
                 echo "Compiling $file"
                 local out=`echo $file | sed -e 's/\.c/.o/'`
-                $CC -c $CFLAGS -o $BUILDDIR/$out $file
+                $CC -c $CFLAGS -o $BUILDDIR/$out $file || exit
             fi
         elif [ -d $file ]; then
             compile $file
@@ -56,16 +56,16 @@ done
 echo "Compiling architecture specific code"
 cd arch/$ARCH
 for file in `ls`; do
-    if [[ $file == *.asm || $file == .s ]]; then
+    if [[ $file == *.asm || $file == *.s ]]; then
         echo "Assembling $file"
         export out=`echo $file | sed -e 's/\.asm/.o/' -e 's/\.s/.o/'`
-        $AS -f elf32 -o $BUILDDIR/$out $file
+        $AS -f elf32 -o $BUILDDIR/$out $file || exit
     fi
 done
 
 echo "Linking files"
 export BUILDS=`ls $BUILDDIR | sed -e "s_\(\w*\).\(\w*\)_$BUILDDIR/\1.\2_g"`
-$LD --script link.ld -o $SWD/kernel.bin $BUILDS
+$LD --script link.ld -o $SWD/kernel.bin $BUILDS || exit
 echo "Completed build"
 
 echo "Generating ISO"
