@@ -172,7 +172,7 @@ void scanf(const char* format, ...) {
 			char* s = va_arg(parameters, char*);
             unsigned int i;
             c = get_and_put();
-            for (i = 0; !(isspace(c)&1); c = get_and_put(), ++i)
+            for (i = 0; !(isspace(c)); c = get_and_put(), ++i)
                 s[i] = c;
             s[i] = 0;
             
@@ -187,11 +187,10 @@ void scanf(const char* format, ...) {
                 is_negative = true;
                 c = get_and_put();;
             }
-            for (;(isdigit(c)&1); c = get_and_put()) {
+            for (;(isdigit(c)); c = get_and_put()) {
                 *num *= 10;
                 *num += c-48;
             }
-            putch(c);
             if (is_negative)
                 *num *= -1;
         }

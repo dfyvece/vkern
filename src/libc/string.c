@@ -30,23 +30,23 @@ size_t strlen(const char *str)
     return retval;
 }
 
-bool islower(unsigned char c) {
+int islower(unsigned char c) {
     return (c >= 97 && c <= 122);
 }
 
-bool isupper(unsigned char c) {
+int isupper(unsigned char c) {
     return (c >= 65 && c <= 90);
 }
 
-bool isalpha(unsigned char c) {
+int isalpha(unsigned char c) {
     return (islower(c) || isupper(c));
 }
 
-bool isspace(unsigned char c) {
+int isspace(unsigned char c) {
     return (c == ' ' || c == '\t' || c == '\n');
 }
 
-bool isdigit(unsigned char c) {
+int isdigit(unsigned char c) {
     return (c == '0' ||
             c == '1' ||
             c == '2' ||
@@ -59,7 +59,7 @@ bool isdigit(unsigned char c) {
             c == '9');
 }
 
-bool isalnum(unsigned char c) {
+int isalnum(unsigned char c) {
     return (isalpha(c) || isdigit(c));
 }
 

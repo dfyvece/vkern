@@ -6,10 +6,9 @@
 #ifndef __SYSTEM_H
 #define __SYSTEM_H
 
-typedef int size_t;
-typedef char bool;
-#define true 1
-#define false 0
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 /* This defines what the stack looks like after an ISR was running */
 struct regs

@@ -151,7 +151,7 @@ void keyboard_handler(struct regs *r) {
         if (kb_flags & FLAG_CAPS_LOCK)
             ch = toupper(ch);
         if (kb_flags & FLAG_SHIFT)
-            if (isupper(ch)&1)
+            if (isupper(ch))
                 ch = tolower(ch);
             else
                 ch = us_shift(ch);
