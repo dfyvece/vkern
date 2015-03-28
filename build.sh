@@ -2,8 +2,14 @@ export CPATH=$HOME/opt/cross
 export CC=$CPATH/bin/i686-elf-gcc
 export CCINCLUDE=$CPATH/lib/gcc/i686-elf/4.9.2/include
 export CCINCLUDE_FIXED=$CPATH/lib/gcc/i686-elf/4.9.2/include-fixed
-includes=(-I`pwd`/src/kernel/include -I`pwd`/src/libc/include)
-export CFLAGS="-w -O -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin -I./include ${includes[@]} -I$CCINCLUDE -I$CCINCLUDE_FIXED"
+includes=()
+for folder in `ls src/include`; do
+    if [ -d src/include/$folder ]; then
+        includes+=(-I`pwd`/src/include/$folder)
+    fi
+done
+export CFLAGS="-w -O -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin"
+export CFLAGS="$CFLAGS ${includes[@]} -I$CCINCLUDE -I$CCINCLUDE_FIXED"
 export AS=nasm
 export LD=$CPATH/bin/i686-elf-ld
 
@@ -25,6 +31,19 @@ else
     exit
 fi
 
+function assemble {
+    local CWD=`pwd`
+    cd arch/$ARCH
+    for file in `ls`; do
+        if [[ $file == *.asm || $file == *.s ]]; then
+            echo "Assembling $file"
+            export out=`echo $file | sed -e 's/\.asm/.o/' -e 's/\.s/.o/'`
+            $AS -f elf32 -o $BUILDDIR/$out $file || exit
+        fi
+    done
+    cd $CWD
+}
+
 
 function compile {
     local CWD=`pwd`
@@ -37,35 +56,32 @@ function compile {
                 $CC -c $CFLAGS -o $BUILDDIR/$out $file || exit
             fi
         elif [ -d $file ]; then
-            compile $file
+            if [[ $file == arch ]]; then
+                if [ -d arch/$ARCH ]; then
+                    assemble
+                else 
+                    echo "Error: missing architecture for `pwd`/$ARCH"
+                    exit
+                fi
+            else
+                compile $file
+            fi
         fi
     done
     cd $CWD
 }
 
-echo "Entering source directories"
 cd src/
 
 echo "Building kernel libraries"
-for entry in `ls`; do
-    if [ $entry != "arch" ]; then
-        compile $entry
-    fi
-done
-
-echo "Compiling architecture specific code"
-cd arch/$ARCH
-for file in `ls`; do
-    if [[ $file == *.asm || $file == *.s ]]; then
-        echo "Assembling $file"
-        export out=`echo $file | sed -e 's/\.asm/.o/' -e 's/\.s/.o/'`
-        $AS -f elf32 -o $BUILDDIR/$out $file || exit
-    fi
-done
+compile `pwd`
+#for entry in `ls`; do
+#    compile $entry
+#done
 
 echo "Linking files"
 export BUILDS=`ls $BUILDDIR | sed -e "s_\(\w*\).\(\w*\)_$BUILDDIR/\1.\2_g"`
-$LD --script link.ld -o $SWD/kernel.bin $BUILDS || exit
+$LD --script arch/$ARCH/link.ld -o $SWD/kernel.bin $BUILDS || exit
 echo "Completed build"
 
 echo "Generating ISO"

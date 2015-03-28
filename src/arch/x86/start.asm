@@ -1,21 +1,11 @@
-; bkerndev - Bran's Kernel Development Tutorial
-; By:   Brandon F. (friesenb@gmail.com)
-; Desc: Kernel entry point, stack, and Interrupt Service Routines.
-;
-; Notes: No warranty expressed or implied. Use at own risk.
-;
-; This is the kernel's entry point. We could either call main here,
-; or we can use this to setup the stack or other nice stuff, like
-; perhaps setting up the GDT and segments. Please note that interrupts
-; are disabled at this point: More on interrupts later!
 [BITS 32]
 
 global start
 start:
-    mov esp, _sys_stack     ; This points the stack to our new stack area
-    jmp stublet
+    mov esp, _sys_stack ; store stack
+    jmp stub
 
-; This part MUST be 4byte aligned, so we solve that issue using 'ALIGN 4'
+; MULTIBOOT HEADER
 ALIGN 4
 mboot:
     ; Multiboot macros to make a few lines later more readable
@@ -40,42 +30,37 @@ mboot:
     dd end
     dd start
 
-; This is an endless loop here. Make a note of this: Later on, we
-; will insert an 'extern _main', followed by 'call _main', right
-; before the 'jmp $'.
-stublet:
-    extern main
-    call main
+stub:
+    extern kernel_main
+    call kernel_main
+    hlt
     jmp $
 
-; This will set up our new segment registers. We need to do
-; something special in order to set CS. We do what is called a
-; far jump. A jump that includes a segment as well as an offset.
-; This is declared in C as 'extern void gdt_flush();'
-global gdt_flush
+; load GDT
+global gdt_load
 extern gp
-gdt_flush:
+gdt_load:
     lgdt [gp]
+    ; Setup segment registers
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     mov ss, ax
-    jmp 0x08:flush2
-flush2:
+
+    ; Far jump to setup cs segment
+    jmp 0x08:load2
+load2:
     ret
 
-; Loads the IDT defined in '_idtp' into the processor.
-; This is declared in C as 'extern void idt_load();'
+; load IDT
 global idt_load
 extern idtp
 idt_load:
     lidt [idtp]
     ret
 
-; In just a few pages in this tutorial, we will add our Interrupt
-; Service Routines (ISRs) right here!
 global isr0
 global isr1
 global isr2
@@ -328,13 +313,9 @@ isr31:
     jmp isr_common_stub
 
 
-; We call a C function in here. We need to let the assembler know
-; that '_fault_handler' exists in another file
 extern fault_handler
 
-; This is our common ISR stub. It saves the processor state, sets
-; up for kernel mode segments, calls the C-level fault handler,
-; and finally restores the stack frame.
+; Save processor state and call fault handler
 isr_common_stub:
     pusha
     push ds
@@ -358,6 +339,8 @@ isr_common_stub:
     popa
     add esp, 8
     iret
+
+; Setup Interrupt Requests
 
 global irq0
 global irq1
@@ -490,6 +473,7 @@ irq15:
 
 extern irq_handler
 
+; Save processor state and call irq_handler
 irq_common_stub:
     pusha
     push ds
@@ -517,11 +501,8 @@ irq_common_stub:
     add esp, 8
     iret
 
-; Here is the definition of our BSS section. Right now, we'll use
-; it just to store the stack. Remember that a stack actually grows
-; downwards, so we declare the size of the data before declaring
-; the identifier '_sys_stack'
+; Setup stack
 SECTION .bss
-    resb 8192               ; This reserves 8KBytes of memory here
+    resb 8192
 _sys_stack:
 
